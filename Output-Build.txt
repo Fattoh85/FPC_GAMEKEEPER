@@ -1,0 +1,5 @@
+﻿Build started at 10:27 AM...
+1>------ Build started: Project: FPC, Configuration: Debug Any CPU ------
+1>  FPC -> C:\Users\Administrator\source\repos\FPC_git\FPC\bin\Debug\FPC.exe
+========== Build: 1 succeeded, 0 failed, 0 up-to-date, 0 skipped ==========
+========== Build completed at 10:27 AM and took 10.560 seconds ==========
