@@ -136,7 +136,7 @@ namespace DbClassLibrary
             log.Debug($"{_tu.GetCurrentMethod()}|GeTransactionListQuery|started");
             string query = "";
             string dbName = moduleSettings.dbName != null ? moduleSettings.dbName : "gkArcade";
-            string projectName = "SPACE";
+            string projectName = "ARCADE";
 
             // Get the current date in the required format (yyyy-MM-dd)
 
@@ -150,22 +150,28 @@ namespace DbClassLibrary
                 alreadyPrinted = "AND [ads_oid] NOT IN (" + alreadyPrinted + ")";
             }
 
-            if (projectName == "CINEGUARD")
+            if (projectName == "ARCADE")
             {
                 query = @"
                     SELECT TOP (1000) 
-                           [trans_oid]
-                          ,[trans_date]
-                          ,[user_oid]
-                          ,[trans_inprocess]
-                      FROM [CineGuardDB].[dbo].[Trans]
-                      WHERE 
-                        [trans_date] >= CONVERT(datetime, '{startDate}', 120)
-                        AND [trans_inprocess] = 0
-                        AND [isAdminBooking] = 0
-                        AND [return_amount] IS NULL
-                      ORDER BY [trans_date] ASC"
-                ;
+                      [DEAL] AS trans_oid,
+                      [DATE] AS trans_date
+                  FROM [gkArcade].[gk].[GK_TRANSACTS]
+                  WHERE 
+	                  [CREATOR] = 2
+                      AND [CARD] = '111015'
+                    
+                      /*  
+                      AND [ads_enddate] >= CONVERT(datetime, '{_appStartTime}', 120)
+                      AND [ads_enddate] <= GETDATE()
+                      AND [ads_enddate] >= DATEADD(minute, -3, GETDATE())
+                      */
+                    
+                  GROUP BY 
+                      [CARD], [DEAL], [DATE]
+                  ORDER BY 
+                      [DEAL] DESC;
+                ";
             }
 
             if (projectName == "SPACE")
@@ -263,7 +269,7 @@ namespace DbClassLibrary
             DateTime x1 = DateTime.Now;
 
 
-            string projectName = "SPACE";
+            string projectName = "ARCADE";
 
             // Выполнение запроса и чтение данных
             using (SqlDataReader reader = ExecuteReader(connection, query))
@@ -327,47 +333,32 @@ namespace DbClassLibrary
         private string GeProductListQuery(string trans_oid, ModuleSettings moduleSettings)
         {
             string query = "";
-            string projectName = "SPACE";
+            string projectName = "ARCADE";
             string dbName = moduleSettings.dbName != null ? moduleSettings.dbName : "gkArcade";
 
-            if (projectName == "CINEGUARD")
+            if (projectName == "ARCADE")
             {
                 query = @"
-                    SELECT 
-                        TD.trans_oid,
-                        F.film_name,
-                        CASE WHEN F.is_3D = 1 THEN '3D' ELSE '2D' END AS movie_format, 	
-                        CONCAT(CONVERT(VARCHAR(11), PG.prog_date,120),FORMAT(CONVERT(datetime, S.sess_start,  120), 'HH:mm')) as sess_start,
-                        Sal.salon_name,
-                        C.chair_row,
-                        C.chair_num,
-                        TD.ticket_price,
-                        PR.pricing_name,
-                        CONCAT(F.film_name, ' (', CASE WHEN F.is_3D = 1 THEN '3D' ELSE '2D' END, ')\n ', 
-                               CONCAT(CONVERT(VARCHAR(11), PG.prog_date,120),FORMAT(CONVERT(datetime, S.sess_start,  120), 'HH:mm')), ',\n зал:', 
-                               Sal.salon_name, '\n, ряд:', C.chair_row, ', место:', C.chair_num, ' \n(', PR.pricing_name, ')' ) AS r_item
-                    FROM 
-                        [CineGuardDB].[dbo].[TransDetails] TD
-                    JOIN 
-                        [CineGuardDB].[dbo].[Trans] T ON TD.trans_oid = T.trans_oid
-                    JOIN 
-                        [CineGuardDB].[dbo].[Sessions] S ON T.sess_oid = S.sess_oid
-                    LEFT JOIN 
-                        [CineGuardDB].[dbo].[Films] F ON S.film_oid = F.film_oid
-                    JOIN 
-                        [CineGuardDB].[dbo].[Salon] Sal ON T.salon_oid = Sal.salon_oid
-                    JOIN 
-                        [CineGuardDB].[dbo].[Chair] C ON TD.chair_oid = C.chair_oid
-                    JOIN 
-                        [CineGuardDB].[dbo].[Pricing] PR ON PR.pricing_oid = TD.pricing_oid
-                    JOIN 
-                        [CineGuardDB].[dbo].[Program] PG ON PG.prog_oid = S.prog_oid
+                     SELECT TOP (1000) 
+                      [DEAL] AS trans_oid,
+                      SUM([VALUE]) AS item_price,
 
-                    WHERE 
-                        TD.trans_oid = '{trans_oid}'
-	                
-                    ORDER BY 
-                        S.sess_start, TD.trans_oid;
+
+                  FROM [gkArcade].[gk].[GK_TRANSACTS]
+                  WHERE 
+	                  [CREATOR] = 2
+                      AND [DEAL] = '{trans_oid}'
+                    
+                      /*  
+                      AND [ads_enddate] >= CONVERT(datetime, '{_appStartTime}', 120)
+                      AND [ads_enddate] <= GETDATE()
+                      AND [ads_enddate] >= DATEADD(minute, -3, GETDATE())
+                      */
+                    
+                  GROUP BY 
+                      [CARD], [DEAL], [DATE]
+                  ORDER BY 
+                      [DEAL] DESC;
 "
                ;
             }
