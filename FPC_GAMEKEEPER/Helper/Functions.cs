@@ -190,14 +190,7 @@ namespace FPC.Helper
 
                                 log.Debug($"{_tu.GetCurrentMethod()}|tran={transaction.trans_oid}|Продуктов:{products.Count}|Отправка на принтер");
 
-                                if (item_serviceprice > 0)
-                                {
-                                    Product serviceFee = GetServiseFee(transaction, moduleSettings, item_serviceprice, item_serviceRate);
-                                    products.Add(serviceFee);
-
-                                    receiptSum += item_serviceprice;
-                                    receiptCash += item_serviceprice;
-                                }
+                                
 
                                 // Отправка на принтер чека
                                 bool print_resp = await SendFormReceipt(moduleSettings, transaction, products, receiptSum, receiptCash, tenderName, itemType);
@@ -328,7 +321,7 @@ namespace FPC.Helper
             {
                 Taxes taxes = GetTaxes(receiptSum, moduleSettings);
 
-                string operationType = GetOperationType(itemType);
+                string operationType = GetOperationType(receiptSum);
 
 
                 var url = moduleSettings.Ip + "/api/formReceipt";
@@ -481,14 +474,16 @@ namespace FPC.Helper
         }
 
 
-        private string GetOperationType(int itemType)
+        private string GetOperationType(long receiptSum)
         {
-            switch (itemType)
+            if (receiptSum < 0)
             {
-                case 1: return "INCOME";
-                case 3: return "REVERT_INCOME";
+                return "REVERT_INCOME" ;
             }
-            return "INCOME";
+            else
+            {
+                return "INCOME";
+            }                       
         }
 
         private Taxes GetTaxes(long receiptSum, ModuleSettings moduleSettings)

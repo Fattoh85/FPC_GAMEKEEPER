@@ -106,7 +106,7 @@ namespace DbClassLibrary
                             Transaction tran = new Transaction();
 
                             tran.trans_oid = reader["trans_oid"].ToString();
-                            tran.trans_date = reader["trans_date"].ToString();
+                            // tran.trans_date = reader["trans_date"].ToString();
                             //tran.user_id = reader["user_oid"].ToString();
                             //tran.fiscal_receipt_printed = reader["fiscal_receipt_printed"].ToString();
 
@@ -156,7 +156,7 @@ namespace DbClassLibrary
                     SELECT TOP (1000) 
                       [DEAL] AS trans_oid,
                       [DATE] AS trans_date
-                  FROM [gkArcade].[gk].[GK_TRANSACTS]
+                  FROM [{dbName}].[gk].[GK_TRANSACTS]
                   WHERE 
 	                  [CREATOR] = 2
                       AND [CARD] = '111015'
@@ -278,14 +278,14 @@ namespace DbClassLibrary
                 {
                     Product product = new Product();
 
-                    if (projectName == "CINEGUARD")
+                    if (projectName == "ARCADE")
                     {
-                        product.name = reader["r_item"].ToString();
-                        product.price = (long)(Convert.ToDecimal(reader["ticket_price"].ToString().Replace(",", ".")) * 100);
+                        product.price = (long)(Convert.ToDecimal(reader["item_price"].ToString().Replace(",", ".")) * 100);
+                        product.name = product.price >=0 ? "Пополнение карты" : "Возврат средств с карты";
                         product.quantity = 1; 
                         product.commodity = moduleSettings.commodity;
                         product.vatCode = moduleSettings.vatCode;
-                        product.sum = (long)(Convert.ToDecimal(reader["ticket_price"].ToString().Replace(",", ".")) * 100);
+                        product.sum = (long)(Convert.ToDecimal(reader["item_price"].ToString().Replace(",", ".")) * 100);
                         productList.Add(product);
                         itemType = 1;
                         receiptSum += product.sum;
@@ -309,14 +309,6 @@ namespace DbClassLibrary
                         receiptCash += product.sum;
                         tenderName = "Наличные";
 
-                        decimal item_service = Convert.ToDecimal(reader["item_serviceprice"].ToString().Replace(",", "."));
-
-                        item_serviceprice += (long) ((item_service * 100) * product.quantity);
-
-                        if (item_serviceprice > 0)
-                        {
-                            item_serviceRate = (long) ((item_service / Convert.ToDecimal(product.sum / 100))  * 100);
-                        }
                         
 
                     }
@@ -341,10 +333,10 @@ namespace DbClassLibrary
                 query = @"
                      SELECT TOP (1000) 
                       [DEAL] AS trans_oid,
-                      SUM([VALUE]) AS item_price,
+                      SUM([VALUE]) AS item_price
 
 
-                  FROM [gkArcade].[gk].[GK_TRANSACTS]
+                  FROM [{dbName}].[gk].[GK_TRANSACTS]
                   WHERE 
 	                  [CREATOR] = 2
                       AND [DEAL] = '{trans_oid}'
@@ -356,7 +348,7 @@ namespace DbClassLibrary
                       */
                     
                   GROUP BY 
-                      [CARD], [DEAL], [DATE]
+                      [CARD], [DEAL]
                   ORDER BY 
                       [DEAL] DESC;
 "
