@@ -11,6 +11,7 @@ namespace FPC.Model.Structure
     {
         public int tranCheckDelay { get;  set; }
         public int printerCheckDelay { get;  set; }
+        public int posId { get;  set; }
         public string connectionString { get; set; }
         public string dbName { get; set; }
         public string Ip { get; set; }

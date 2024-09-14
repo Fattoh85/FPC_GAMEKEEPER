@@ -147,30 +147,36 @@ namespace DbClassLibrary
 
             if (alreadyPrinted.Length > 0)
             {
-                alreadyPrinted = "AND [ads_oid] NOT IN (" + alreadyPrinted + ")";
+                alreadyPrinted = "AND [DEAL] NOT IN (" + alreadyPrinted + ")";
             }
 
             if (projectName == "ARCADE")
             {
                 query = @"
-                    SELECT TOP (1000) 
-                      [DEAL] AS trans_oid,
-                      [DATE] AS trans_date
-                  FROM [{dbName}].[gk].[GK_TRANSACTS]
-                  WHERE 
-	                  [CREATOR] = 2
-                      AND [CARD] = '111015'
+                    SELECT TOP (10) 
+                        [DEAL] AS trans_oid,
+                        SUM([VALUE]) AS item_price
+	                    , [DATE]
+	                    , [CARD]
+	                    , [CREATORADDR]
+                    FROM [{dbName}].[gk].[GK_TRANSACTS]
+                    WHERE 
+                        [EMPLOYEE] IS NOT NULL
+	                    AND [VALUE] != 0
+	                    AND (([VALUE] >0 AND [QUANT] > 0) OR ([VALUE]<0))
+                      
                     
-                      /*  
-                      AND [ads_enddate] >= CONVERT(datetime, '{_appStartTime}', 120)
-                      AND [ads_enddate] <= GETDATE()
-                      AND [ads_enddate] >= DATEADD(minute, -3, GETDATE())
-                      */
-                    
-                  GROUP BY 
-                      [CARD], [DEAL], [DATE]
-                  ORDER BY 
-                      [DEAL] DESC;
+                        
+                      --AND [DATE] >= CONVERT(datetime, '{_appStartTime}', 120)
+                      AND [DATE] >= CONVERT(datetime, '{startDate}', 120)
+                      AND [DATE] <= GETDATE()
+                      --AND [DATE] >= DATEADD(minute, -3, GETDATE())
+                      AND [CREATORADDR] = {posId}
+                                          
+                 GROUP BY 
+                    [CREATORADDR],[DEAL], CARD, DATE
+                ORDER BY 
+                                      [DEAL] DESC;
                 ";
             }
 
@@ -204,6 +210,7 @@ namespace DbClassLibrary
             query = query.Replace("{_appStartTime}", _appStartTimeStr);
             query = query.Replace("{alreadyPrinted}", alreadyPrinted);
             query = query.Replace("{dbName}", dbName);
+            query = query.Replace("{posId}", moduleSettings.posId.ToString());
 
             //log.Debug($"{_tu.GetCurrentMethod()}|GeTransactionListQuery|query=" + query);
             return query;
@@ -281,7 +288,7 @@ namespace DbClassLibrary
                     if (projectName == "ARCADE")
                     {
                         product.price = (long)(Convert.ToDecimal(reader["item_price"].ToString().Replace(",", ".")) * 100);
-                        product.name = product.price >=0 ? "Пополнение карты" : "Возврат средств с карты";
+                        product.name = product.price >=0 ? "Пополнение карты " + reader["CARD"].ToString() : "Возврат средств с карты "  + reader["CARD"].ToString();
                         product.quantity = 1; 
                         product.commodity = moduleSettings.commodity;
                         product.vatCode = moduleSettings.vatCode;
@@ -291,6 +298,7 @@ namespace DbClassLibrary
                         receiptSum += product.sum;
                         receiptCash += product.sum;
                         tenderName = "Наличные";
+
                        
                     }
 
@@ -331,26 +339,26 @@ namespace DbClassLibrary
             if (projectName == "ARCADE")
             {
                 query = @"
-                     SELECT TOP (1000) 
-                      [DEAL] AS trans_oid,
-                      SUM([VALUE]) AS item_price
+                     SELECT TOP (10000) 
+                        [DEAL] AS trans_oid,
+                        SUM([VALUE]) AS item_price
+	                    , [DATE]
+	                    , [CARD]
+	                    , [CREATORADDR]
+                    FROM [{dbName}].[gk].[GK_TRANSACTS]
+                    WHERE 
 
-
-                  FROM [{dbName}].[gk].[GK_TRANSACTS]
-                  WHERE 
-	                  [CREATOR] = 2
-                      AND [DEAL] = '{trans_oid}'
+                        [EMPLOYEE] IS NOT NULL
+	                    AND [VALUE] != 0
+	                    AND (([VALUE] >0 AND [QUANT] > 0) OR ([VALUE]<0))
+                        AND [DEAL] = '{trans_oid}'
+                      
+                     
                     
-                      /*  
-                      AND [ads_enddate] >= CONVERT(datetime, '{_appStartTime}', 120)
-                      AND [ads_enddate] <= GETDATE()
-                      AND [ads_enddate] >= DATEADD(minute, -3, GETDATE())
-                      */
-                    
-                  GROUP BY 
-                      [CARD], [DEAL]
-                  ORDER BY 
-                      [DEAL] DESC;
+                    GROUP BY 
+                        [CREATORADDR],[DEAL], CARD, DATE
+                    ORDER BY 
+                          [DEAL] DESC;
 "
                ;
             }
@@ -406,6 +414,8 @@ namespace DbClassLibrary
 
             query = query.Replace("{trans_oid}", trans_oid);
             query = query.Replace("{dbName}", dbName);
+
+            //log.Debug($"{_tu.GetCurrentMethod()}|GeTransactionListQuery|query=" + query);
 
             return query;
         }
